@@ -58,33 +58,33 @@ public class CrawlerMain {
 
         crawler = new AmazonCrawler(proxyFilePath, errChannel, ERR_QUEUE_NAME);
         //callback
-            Consumer consumer = new DefaultConsumer(inChannel) {
-                @Override
-                public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
-                        throws IOException {
-                    try {
-                            String message = new String(body, "UTF-8");
-                            System.out.println(" [x] Received '" + message + "'");
-                            String[] fields = message.split(",");
-                            String query = fields[0].trim();
-                            double bidPrice = Double.parseDouble(fields[1].trim());
-                            int campaignId = Integer.parseInt(fields[2].trim());
-                            int queryGroupId = Integer.parseInt(fields[3].trim());
+        Consumer consumer = new DefaultConsumer(inChannel) {
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body)
+                    throws IOException {
+                try {
+                        String message = new String(body, "UTF-8");
+                        System.out.println(" [x] Received '" + message + "'");
+                        String[] fields = message.split(",");
+                        String query = fields[0].trim();
+                        double bidPrice = Double.parseDouble(fields[1].trim());
+                        int campaignId = Integer.parseInt(fields[2].trim());
+                        int queryGroupId = Integer.parseInt(fields[3].trim());
 
-                            List<Ad> ads =  crawler.GetAdBasicInfoByQuery(query, bidPrice, campaignId, queryGroupId);
-                            for(Ad ad : ads) {
-                                String jsonInString = mapper.writeValueAsString(ad);
-                                System.out.println(jsonInString);
-                                outChannel.basicPublish("", OUT_QUEUE_NAME, null, jsonInString.getBytes("UTF-8"));
-                            }
-                            Thread.sleep(2000);
-                    }catch(InterruptedException ex) {
-                        Thread.currentThread().interrupt();
-                    }  catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                        List<Ad> ads =  crawler.GetAdBasicInfoByQuery(query, bidPrice, campaignId, queryGroupId);
+                        for(Ad ad : ads) {
+                            String jsonInString = mapper.writeValueAsString(ad);
+                            System.out.println(jsonInString);
+                            outChannel.basicPublish("", OUT_QUEUE_NAME, null, jsonInString.getBytes("UTF-8"));
+                        }
+                        Thread.sleep(2000);
+                }catch(InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }  catch (IOException e) {
+                    e.printStackTrace();
                 }
-            };
+            }
+        };
         inChannel.basicConsume(IN_QUEUE_NAME, true, consumer);
 
         //bw.close();
