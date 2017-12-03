@@ -12,16 +12,13 @@ public class AdsCampaignManager {
 	private String mysql_db;
 	private String mysql_user;
 	private String mysql_pass;
-	private static double minPriceThreshold = 0.0;
-	private MySQLAccess mysql;
+	private static double minPriceThreshold = 0.1;
 	protected AdsCampaignManager(String mysqlHost,String mysqlDb,String user,String pass)
 	{
 		mysql_host = mysqlHost;
 		mysql_db = mysqlDb;	
 		mysql_user = user;
 		mysql_pass = pass;	
-		mysql = new MySQLAccess(mysql_host, mysql_db, mysql_user, mysql_pass);
-
 	}
 	public static AdsCampaignManager getInstance(String mysqlHost,String mysqlDb,String user,String pass) {
 	      if(instance == null) {
@@ -48,6 +45,7 @@ public class AdsCampaignManager {
 		List<Ad> ads = new ArrayList<Ad>();
 		try
 		{
+			MySQLAccess mysql = new MySQLAccess(mysql_host, mysql_db, mysql_user, mysql_pass);
 			for(int i = 0; i < adsCandidates.size()  - 1;i++)
 			{
 				Ad ad = adsCandidates.get(i);
@@ -57,7 +55,18 @@ public class AdsCampaignManager {
 				System.out.println("AdsCampaignManager ad.costPerClick= " + ad.costPerClick);
 				System.out.println("AdsCampaignManager campaignId= " + campaignId);
 				System.out.println("AdsCampaignManager budget left = " + budget);
-
+				//probelem:
+				//#1 data consistency/correctness in database
+				//#2 max concurrent update transactions supported by databases, oracle  
+				//design choice
+				//#1 transaction
+				//#2 offline/Async process
+				//ApplyBudget log: tractionId(sessionID), campaignId, ad.costPerClick , adId
+				//1.set budget buffer and alert on 10% of budget left on campaignId 9999 -> offline process campaignId 9999
+				//2.read budget log every 4 hours
+				//3.reduce offline process frequency 
+				//4.aggregate cpc per campaignID then update budget for current campaign once
+				//message queue: q1 : 4 hours, q2: 2 hours, q3 : 30 mins
 				if(ad.costPerClick <= budget && ad.costPerClick >= minPriceThreshold)
 				{
 					ads.add(ad);

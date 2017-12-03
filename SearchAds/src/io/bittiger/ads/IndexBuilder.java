@@ -3,9 +3,9 @@ package io.bittiger.ads;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.InetSocketAddress;
-import java.sql.Connection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.TokenStream;
@@ -16,10 +16,10 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-import net.spy.memcached.MemcachedClient;
 import net.spy.memcached.AddrUtil;
 import net.spy.memcached.ConnectionFactoryBuilder;
 import net.spy.memcached.FailureMode;
+import net.spy.memcached.MemcachedClient;
 
 public class IndexBuilder {
 	private int EXP = 0; //0: never expire
@@ -29,20 +29,8 @@ public class IndexBuilder {
 	private String mysql_db;
 	private String mysql_user;
 	private String mysql_pass;
-	private MySQLAccess mysql;
 	private MemcachedClient cache;
 	
-
-	public void Close() {
-		if(mysql != null) {
-			try {
-				mysql.close();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
 	public IndexBuilder(String memcachedServer,int memcachedPortal,String mysqlHost,String mysqlDb,String user,String pass)
 	{
 		mMemcachedServer = memcachedServer;
@@ -51,7 +39,6 @@ public class IndexBuilder {
 		mysql_db = mysqlDb;	
 		mysql_user = user;
 		mysql_pass = pass;	
-		mysql = new MySQLAccess(mysql_host, mysql_db, mysql_user, mysql_pass);
 		String address = mMemcachedServer + ":" + mMemcachedPortal;
 		try 
 		{
@@ -60,6 +47,13 @@ public class IndexBuilder {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	private int getRandPrice() {
+		Random r = new Random();
+		int Low = 10;
+		int High = 100;
+		int price = r.nextInt(High-Low) + Low;
+		return price;
 	}
 	public Boolean buildInvertIndex(Ad ad)
 	{
@@ -88,7 +82,12 @@ public class IndexBuilder {
 	{
 		try 
 		{
-			mysql.addAdData(ad);			
+			MySQLAccess mysql = new MySQLAccess(mysql_host, mysql_db, mysql_user, mysql_pass);
+			if(ad.price == 0) {
+				ad.price = getRandPrice();
+			}
+			mysql.addAdData(ad);
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -100,6 +99,7 @@ public class IndexBuilder {
 	{
 		try 
 		{
+			MySQLAccess mysql = new MySQLAccess(mysql_host, mysql_db, mysql_user, mysql_pass);
 			mysql.addCampaignData(camp);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

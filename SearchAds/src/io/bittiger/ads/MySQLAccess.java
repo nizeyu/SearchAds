@@ -14,7 +14,6 @@ public class MySQLAccess {
      private String d_password;
      private String d_server_name;
      private String d_db_name;
-     
      public void close() throws Exception {
          System.out.println("Close database");
            try {
@@ -31,35 +30,30 @@ public class MySQLAccess {
          d_db_name = db;
          d_user_name = user;
          d_password = password;
-         try {
-			getConnection();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
      }
      
-     public void getConnection() throws Exception {
+     private Connection getConnection() throws Exception {
            try {
         	   // This will load the MySQL driver, each DB has its own driver
                Class.forName("com.mysql.jdbc.Driver");
                String conn = "jdbc:mysql://" + d_server_name + "/" + 
                        d_db_name+"?user="+d_user_name+"&password="+d_password;
-               System.out.println("Connecting to database: " + conn);
+               //System.out.println("Connecting to database: " + conn);
                d_connect = DriverManager.getConnection(conn);
-               System.out.println("Connected to database");
+               //System.out.println("Connected to database");
+               return d_connect;
            } catch(Exception e) {
                throw e;
            }     
       }
       
-     private Boolean isRecordExist(String sql_string) throws SQLException {
+     private Boolean isRecordExist(Connection connect,String sql_string) throws SQLException {
     	 PreparedStatement existStatement = null;
     	 boolean isExist = false;
 
     	 try
          {
-        	 existStatement = d_connect.prepareStatement(sql_string);
+        	 existStatement = connect.prepareStatement(sql_string);
              ResultSet result_set = existStatement.executeQuery();
              if (result_set.next())
              {
@@ -83,18 +77,26 @@ public class MySQLAccess {
      }
      
      public void addAdData(Ad ad) throws Exception {
+    	 Connection connect = null;
     	 boolean isExist = false;
     	 String sql_string = "select adId from " + d_db_name + ".ad where adId=" + ad.adId;
     	 PreparedStatement ad_info = null;
     	 try
          {
-        	 isExist = isRecordExist(sql_string);        
+        	 connect = getConnection();
+        	 isExist = isRecordExist(connect, sql_string);        
          }
          catch(SQLException e )
           {
               System.out.println(e.getMessage());
               throw e;
           } 
+          finally
+          {
+               if(connect != null && isExist) {
+            	   connect.close();
+               }
+         }
     	 
     	 if(isExist) {
     		 return;
@@ -102,7 +104,7 @@ public class MySQLAccess {
     	 
          sql_string = "insert into " + d_db_name +".ad values(?,?,?,?,?,?,?,?,?,?,?)";
           try {
-        	  ad_info = d_connect.prepareStatement(sql_string);
+        	  ad_info = connect.prepareStatement(sql_string);
         	  ad_info.setLong(1, ad.adId);
         	  ad_info.setLong(2, ad.campaignId);
         	  String keyWords = Utility.strJoin(ad.keyWords, ",");			  
@@ -127,16 +129,20 @@ public class MySQLAccess {
                if (ad_info != null) {
             	   ad_info.close();
                };
+               if (connect != null) {
+            	   connect.close();          	   
+               }
          }   	 
      }
      public Ad getAdData(Long adId) throws Exception {
-    	 
+    	 Connection connect = null;
     	 PreparedStatement adStatement = null;
     	 ResultSet result_set = null;
     	 Ad ad = new Ad();
     	 String sql_string = "select * from " + d_db_name + ".ad where adId=" + adId;
     	 try {
-        	 adStatement = d_connect.prepareStatement(sql_string);
+        	 connect = getConnection();
+        	 adStatement = connect.prepareStatement(sql_string);
         	 result_set = adStatement.executeQuery();
              while (result_set.next()) {      	 
             	 ad.adId = result_set.getLong("adId");
@@ -167,6 +173,9 @@ public class MySQLAccess {
               if (result_set != null) {
             	  result_set.close();
               }
+              if (connect != null) {
+           	   connect.close();          	   
+              }
         }  
     	return ad;
      }
@@ -177,7 +186,8 @@ public class MySQLAccess {
     	 String sql_string = "select campaignId from " + d_db_name + ".campaign where campaignId=" + campaign.campaignId;
     	 try
          {
-        	 isExist = isRecordExist(sql_string);        
+        	 connect = getConnection();
+        	 isExist = isRecordExist(connect, sql_string);        
          }
          catch(SQLException e )
           {
@@ -217,6 +227,7 @@ public class MySQLAccess {
         }   	 
      }
      public Double getBudget(Long campaignId)  throws Exception {
+    	 Connection connect = null;
     	 PreparedStatement selectStatement = null;
     	 ResultSet result_set = null;
     	 Double budget = 0.0;
@@ -224,7 +235,8 @@ public class MySQLAccess {
          System.out.println("sql: " + sql_string);
     	 try
          {
-        	 selectStatement = d_connect.prepareStatement(sql_string);
+        	 connect = getConnection();
+        	 selectStatement = connect.prepareStatement(sql_string);
         	 result_set = selectStatement.executeQuery();
              while (result_set.next()) { 
             	 budget = result_set.getDouble("budget");
@@ -243,16 +255,21 @@ public class MySQLAccess {
         	   if(result_set != null) {
         		   result_set.close();
         	   }
+               if(connect != null) {
+            	   connect.close();
+               }
          }
     	 return budget;
      }
      public void updateCampaignData(Long campaignId,Double newBudget) throws Exception {
+    	 Connection connect = null;
     	 PreparedStatement updateStatement = null;
     	 String sql_string= "update " + d_db_name + ".campaign set budget=" + newBudget +" where campaignId=" + campaignId;
     	 System.out.println("sql: " + sql_string);
     	 try
          {
-        	 updateStatement = d_connect.prepareStatement(sql_string);
+        	 connect = getConnection();
+        	 updateStatement = connect.prepareStatement(sql_string);
         	 updateStatement.executeUpdate();
          }
          catch(SQLException e )
@@ -265,6 +282,9 @@ public class MySQLAccess {
         	   if(updateStatement != null) {
         		   updateStatement.close();
         	   }
+               if(connect != null) {
+            	   connect.close();
+               }
          }
     	 
      }
