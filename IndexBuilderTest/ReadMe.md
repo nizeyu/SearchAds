@@ -10,8 +10,11 @@ Index Builder Test is a program to test index builder function in AdsSearch Proj
 
     git clone https://github.com/nizeyu/SearchAds.git
 
+
 (2)   Create Java Project: AdsPulisher in Eclipse or IntelliJ IDEA
+
 (3)   Create Java Project: IndexBuilder in Eclipse or IntelliJ IDEA
+
 (4)   Create two tables in Database "Searchads"
 
     ### Table: campaign
@@ -34,7 +37,9 @@ Index Builder Test is a program to test index builder function in AdsSearch Proj
 	title       varchar(2048)
 
 (5)   Start Memcached： In terminal, type in /usr/local/bin/memcached -d -p 11211
+
 (6)   run AdsPublisher.java in AdsPublisher to publish ads information to RabbitMQ
+
 (7)   run Test.java to consume from RabbitMQ to build invert index and store in MySQL
 
 Finished! Thank for review!
